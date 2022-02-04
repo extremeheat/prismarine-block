@@ -157,6 +157,15 @@ declare class Block {
      * @param biomeId - The biome this block is in.
      */
     static fromProperties(typeId: number, properties: { [key: string]: string | number }, biomeId: number): Block;
+
+    // Returns simplified NBT for the block entity, if it exists.
+    // If a sign, contains instances of prismarine-chat ChatMessage
+    get blockEntity(): object
+    
+    // Sets sign text for this block entity, can be a string, array of objects or ChatMessages
+    set signText(args: string | string[] | object[] | ChatMessage[])
+    // Returns sign text for this block entity
+    get signText(): string
 }
 
 /** @deprecated */
