@@ -141,16 +141,14 @@ function provider (registry, { Biome, version, features }) {
       this.computedStates = {}
 
       if (stateId === undefined && type !== undefined) {
-        this.stateId = (type << 4) | (metadata || 0)
+        const b = registry.blocks[type]
+        // Make sure the block is actually valid and metadata is within valid bounds
+        this.stateId = b === undefined ? null : Math.min(b.minStateId + metadata, b.maxStateId)
       }
 
-      const blockEnum = registry.blocksByStateId[stateId]
+      const blockEnum = registry.blocksByStateId[this.stateId]
       if (blockEnum) {
-        if (stateId === undefined) {
-          this.stateId = blockEnum.minStateId
-        } else {
-          this.metadata = this.stateId - blockEnum.minStateId
-        }
+        this.metadata = this.stateId - blockEnum.minStateId
         this.type = blockEnum.id
         this.name = blockEnum.name
         this.hardness = blockEnum.hardness
@@ -205,7 +203,7 @@ function provider (registry, { Biome, version, features }) {
           this._properties = legacyPcBlocksByIdmeta[this.type + ':' + this.metadata] || legacyPcBlocksByIdmeta[this.type + ':0']
         }
       } else if (version.type === 'bedrock') {
-        const states = registry.blockStates[this.stateId].states
+        const states = registry.blockStates?.[this.stateId]?.states || {}
         for (const state in states) {
           this._properties[state] = states[state].value
         }
@@ -222,7 +220,7 @@ function provider (registry, { Biome, version, features }) {
       if (features.usesBlockStates) {
         return new Block(undefined, biomeId, 0, stateId)
       } else {
-        return new Block(stateId >> 4, biomeId, stateId & 15)
+        return new Block(stateId >> 4, biomeId, stateId & 15, stateId)
       }
     }
 
@@ -230,7 +228,13 @@ function provider (registry, { Biome, version, features }) {
       const block = typeof typeId === 'string' ? registry.blocksByName[typeId] : registry.blocks[typeId]
 
       if (version.type === 'pc') {
-        if (!block.states) {
+        if (block.states) {
+          let data = 0
+          for (const [key, value] of Object.entries(properties)) {
+            data += getStateValue(block.states, key, value)
+          }
+          return new Block(undefined, biomeId, 0, block.minStateId + data)
+        } else {
           const states = legacyPcBlocksByName[block.name]
           for (const state in states) {
             let broke
@@ -247,12 +251,6 @@ function provider (registry, { Biome, version, features }) {
             }
           }
           throw new Error('No matching block state found for ' + block.name + ' with properties ' + JSON.stringify(properties)) // This should not happen
-        } else {
-          let data = 0
-          for (const [key, value] of Object.entries(properties)) {
-            data += getStateValue(block.states, key, value)
-          }
-          return new Block(undefined, biomeId, 0, block.minStateId + data)
         }
       } else if (version.type === 'bedrock') {
         for (let stateId = block.minStateId; stateId <= block.maxStateId; stateId++) {
