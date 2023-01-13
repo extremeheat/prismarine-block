@@ -23,15 +23,13 @@ const legacyPcBlocksByIdmeta = Object.entries(mcData.legacy.pc.blocks).reduce((o
 
 function loader (registryOrVersion) {
   const registry = typeof registryOrVersion === 'string' ? require('prismarine-registry')(registryOrVersion) : registryOrVersion
-  const mcVersion = registry.version.type === 'bedrock' ? 'bedrock_' + registry.version.majorVersion : registry.version.minecraftVersion // until prismarine-biome supports registry
-
   const version = registry.version
   const features = {
     usesBlockStates: (version.type === 'pc' && version['>=']('1.13')) || (version.type === 'bedrock'),
     effectNamesMatchRegistryName: version['>=']('1.17')
   }
 
-  return provider(registry, { Biome: require('prismarine-biome')(mcVersion), features, version })
+  return provider(registry, { Biome: require('prismarine-biome')(registry), features, version })
 }
 
 function provider (registry, { Biome, version, features }) {
@@ -132,7 +130,7 @@ function provider (registry, { Biome, version, features }) {
   return class Block {
     constructor (type, biomeId, metadata, stateId) {
       this.type = type
-      this.metadata = metadata
+      this.metadata = metadata ?? 0
       this.light = 0
       this.skyLight = 0
       this.biome = new Biome(biomeId)
@@ -201,6 +199,12 @@ function provider (registry, { Biome, version, features }) {
           }
         } else {
           this._properties = legacyPcBlocksByIdmeta[this.type + ':' + this.metadata] || legacyPcBlocksByIdmeta[this.type + ':0']
+          if (!this._properties) { // If no props, try different metadata for type match only
+            for (let i = 0; i < 15; i++) {
+              this._properties = legacyPcBlocksByIdmeta[this.type + ':' + i]
+              if (this._properties) break
+            }
+          }
         }
       } else if (version.type === 'bedrock') {
         const states = registry.blockStates?.[this.stateId]?.states || {}
