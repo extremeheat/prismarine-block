@@ -156,9 +156,11 @@ declare class Block {
      * @param properties - A dictionary of block states to build from.
      * @param biomeId - The biome this block is in.
      */
-    static fromProperties(typeId: number | string, properties: { [key: string]: string | number }, biomeId: number): Block;
+    static fromProperties(typeId: number, properties: { [key: string]: string | number }, biomeId: number): Block;
 }
 
 /** @deprecated */
-export declare function loader(mcVersion: string): typeof Block;
-export declare function loader(registry: ReturnType<typeof Registry>): typeof Block;
+function loader(mcVersion: string): typeof Block;
+function loader(registry: ReturnType<typeof Registry>): typeof Block;
+
+export = loader
