@@ -148,7 +148,7 @@ declare class Block {
      */
     digTime(heldItemType: number | null, creative: boolean, inWater: boolean, notOnGround: boolean, enchantments?: NormalizedEnchant[], effects?: Effect[]): number;
 
-    static fromStateId(stateId: number, biomeId: number): Block;
+    static fromStateId(stateId: number | string, biomeId: number): Block;
 
     /**
      * Creates a block object from a given type id and set of block state properties.
